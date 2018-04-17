@@ -4,7 +4,6 @@
 from copy import deepcopy
 from Case import Case
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 class Board(object):
@@ -186,7 +185,6 @@ class Board(object):
         :param mat:
         :return:
         """
-
         a_mat = list()
         b_vector = list()
         # on parcour tout le plateau
@@ -198,40 +196,38 @@ class Board(object):
                         self.mat[y][x].type == Case.DANGER or \
                         self.mat[y][x].type == Case.OBSTACLE:
                     # position dans le vecteur a
-                    pos_vector = (y * self.width) + x
+                    # pos_vector = (y * self.width) + x
                     # si on ne touche pas l'equation est juste eguale a la recompense
-                    a_vector[pos_vector] = 1
-                    a_mat.append(a_vector)
                     b_vector.append(self.mat[y][x].recompense)
-                    continue
-
-                # -1 car comme on passe la recompensse de l'autre cotée de l'égaliter on inverse le signe
-                b_vector.append(self.mat[y][x].recompense * -1)
-                # On recupaire tout les moves possible a partire de la position donnée
-                possible_move = self.get_move([y, x])
-                wanted_move = mat_politique[y][x]
-                # on regard qu'elle move je peut aller sachant que je vais a wanted_move
-                for prob_move in possible_move[wanted_move]:
-                    # on deplasse le joueur
-                    new_x = x + self.move_pattern[prob_move][1]
-                    new_y = y + self.move_pattern[prob_move][0]
-                    # position dans le vecteur a
-                    pos_vector = (new_y * self.width) + new_x
-                    if possible_move[wanted_move][prob_move] != 0:
-                        # On regarde si c'est un rebon on retir 1
-                        if prob_move == 'r':
-                            # -1 car on passe lui maime de l'autre cotée de l'égaliter
-                            a_vector[pos_vector] = round(possible_move[wanted_move][prob_move] - 1, 2)
-                        else:
-                            a_vector[pos_vector] = possible_move[wanted_move][prob_move]
-                # on rajoute une nouvelle ligne pour notre equation
-                a_mat.append(a_vector)
-
-        print("**A**\n", np.asarray(a_mat))
-        print("**B**\n", b_vector)
-        utility_vec = np.linalg.solve(np.array(a_mat), np.array(b_vector))
-        print("res = ", utility_vec)
-        return np.reshape(utility_vec, (self.height, self.width)).tolist()
+                    a_vector[len(b_vector) - 1] = 1
+                    a_mat.append(a_vector)
+                else:
+                    # -1 car comme on passe la recompensse de l'autre cotée de l'égaliter on inverse le signe
+                    b_vector.append(self.mat[y][x].recompense * -1)
+                    # On recupaire tout les moves possible a partire de la position donnée
+                    possible_move = self.get_move([y, x])
+                    wanted_move = mat_politique[y][x]
+                    # on regard qu'elle move je peut aller sachant que je vais a wanted_move
+                    for prob_move in possible_move[wanted_move]:
+                        # on deplasse le joueur
+                        new_x = x + self.move_pattern[prob_move][1]
+                        new_y = y + self.move_pattern[prob_move][0]
+                        # position dans le vecteur a
+                        pos_vector = (new_y * self.width) + new_x
+                        if possible_move[wanted_move][prob_move] != 0:
+                            # On regarde si c'est un rebon on retir 1
+                            if prob_move == 'r':
+                                # -1 car on passe lui maime de l'autre cotée de l'égaliter
+                                a_vector[pos_vector] = round(possible_move[wanted_move][prob_move] - 1, 2) * escompte
+                            else:
+                                a_vector[pos_vector] = possible_move[wanted_move][prob_move] * escompte
+                    # on rajoute une nouvelle ligne pour notre equation
+                    a_mat.append(a_vector)
+        try:
+            utility_vec = np.linalg.solve(np.array(a_mat), np.array(b_vector))
+            return np.reshape(utility_vec, (self.height, self.width)).tolist()
+        except Exception:
+            return -1
 
     def iteration_politique(self, escompte=1):
         """
@@ -243,6 +239,9 @@ class Board(object):
         while True:
             # calcule de l'utiliter pour chaque case
             mat_utiliter = self.get_utility(histori_mat_politique[-1], escompte)
+            if mat_utiliter == -1:
+                print("error solving")
+                break
             # Avec utiliter trouver on regarde la nouvelle politique
             histori_mat_politique.append(self.get_politique(mat_utiliter))
             # Si il n'y a pas de changement avec la derrnière politique on stop
@@ -280,11 +279,11 @@ class Board(object):
 
 if __name__ == "__main__":
 
-    # mat = [[Case(Case.VIDE, -0.04), Case(Case.FIN, 1)],
-    #        [Case(Case.START, -0.04), Case(Case.DANGER, -1)]]
-    #
-    # b = Board(2, 2, None, None, mat)
-    # print(np.array(b.iteration_politique()))
+    mat = [[Case(Case.VIDE, -0.04), Case(Case.FIN, 1)],
+           [Case(Case.START, -0.04), Case(Case.DANGER, -1)]]
+
+    b = Board(2, 2, None, None, mat)
+    print(np.array(b.iteration_politique()))
 
     b = Board()
     print("valeur")

@@ -16,6 +16,7 @@ class Case(object):
         self.type = type
         self.recompense = recompense
         self.shape = None
+        self.text_shape = None
 
 
 if __name__ == "__main__":

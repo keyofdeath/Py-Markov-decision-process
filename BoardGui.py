@@ -3,9 +3,9 @@
 
 from tkinter import *
 from tkinter.ttk import *
-from time import sleep, time
 from Board import *
 from math import *
+import time
 
 
 class BoardGui(object):
@@ -89,6 +89,7 @@ class BoardGui(object):
         self.ia_select = Combobox(self.top, values=algo, state='readonly')
         self.ia_select.place(relx=0.74, rely=0.86, relheight=0.03, relwidth=0.24)
         self.ia_select.configure(takefocus="")
+        self.ia_select.set(algo[0])
 
         # Botton pour générer le plateau
         self.generate = Button(self.top)
@@ -143,28 +144,6 @@ class BoardGui(object):
 
         self.select_set.set(1)
 
-        # Vitesse d'éxécution
-        self.speed = Spinbox(self.top, from_=1.0, to=100.0)
-        self.speed.place(relx=0.07, rely=0.96, relheight=0.03, relwidth=0.15)
-        self.speed.configure(activebackground="#f9f9f9")
-        self.speed.configure(background="white")
-        self.speed.configure(buttonbackground="#d9d9d9")
-        self.speed.configure(disabledforeground="#a3a3a3")
-        self.speed.configure(font=font9)
-        self.speed.configure(foreground="black")
-        self.speed.configure(from_="0.3")
-        self.speed.configure(highlightbackground="black")
-        self.speed.configure(highlightcolor="black")
-        self.speed.configure(insertbackground="black")
-        self.speed.configure(selectbackground="#c4c4c4")
-        self.speed.configure(selectforeground="black")
-        self.speed.configure(to="100.0")
-        self.speed.configure(width=265)
-
-        self.Label5 = Label(self.top)
-        self.Label5.place(relx=0.25, rely=0.96, height=21, width=74)
-        self.Label5.configure(text='''Vitesse (en s)''')
-
         self.top.mainloop()
 
     def delete_shape_board(self, y, x):
@@ -177,6 +156,17 @@ class BoardGui(object):
         if self.board.mat[y][x].shape is not None:
             self.canvas.delete(self.board.mat[y][x].shape)
             self.board.mat[y][x].shape = None
+
+    def delete_shape_board_text(self, y, x):
+        """
+
+        :param y:
+        :param x:
+        :return:
+        """
+        if self.board.mat[y][x].text_shape is not None:
+            self.canvas.delete(self.board.mat[y][x].text_shape)
+            self.board.mat[y][x].text_shape = None
 
     def draw_rec(self, y, x, color):
         """
@@ -198,6 +188,28 @@ class BoardGui(object):
                                                                   (colomne_space * x) + colomne_space,
                                                                   (ligne_space * y) + ligne_space,
                                                                   fill=color)
+        self.canvas.update_idletasks()
+
+    def draw_char_at(self, y, x, char):
+        """
+
+        :param y:
+        :param x:
+        :param char
+        :return:
+        """
+        self.delete_shape_board_text(y, x)
+        can_largeur = self.canvas.winfo_width()
+        can_hauteur = self.canvas.winfo_height()
+
+        #  + 2 car il y a les bords
+        colomne_space = can_largeur / self.board.width
+        ligne_space = can_hauteur / self.board.height
+
+        self.board.mat[y][x].text_shape = self.canvas.create_text(colomne_space * x + 20, ligne_space * y + 20,
+                                                                  fill="darkblue",
+                                                                  font="Times 20 italic bold",
+                                                                  text=char)
         self.canvas.update_idletasks()
 
     def draw_player(self, y, x):
@@ -331,14 +343,26 @@ class BoardGui(object):
 
         :return:
         """
-        pass
+        start = time.time()
+        politique = self.board.iteration_valeur()
+        end = time.time()
+        print("Temps éxécution = ", end - start)
+        for y in range(len(politique)):
+            for x in range(len(politique[y])):
+                self.draw_char_at(y, x, politique[y][x])
 
     def __simulation_iteration_politique(self):
         """
 
         :return:
         """
-        pass
+        start = time.time()
+        politique = self.board.iteration_politique()
+        end = time.time()
+        print("Temps éxécution = ", end - start)
+        for y in range(len(politique)):
+            for x in range(len(politique[y])):
+                self.draw_char_at(y, x, politique[y][x])
 
     # ______________________________________FIN ALGO DU TP______________________________________
 
@@ -349,18 +373,13 @@ class BoardGui(object):
         """
         if self.board is None:
             self.__new_board()
-        try:
-            speed = float(self.speed.get())
-        except ValueError:
-            print("Error get speed")
-            return
 
         # on fait un dico event pour faciliter l'apelle au differente fonction
         func = {"Iteration Valeur": self.__simulation_iteration_valeur,
                 "Iteration Politique": self.__simulation_iteration_politique}
         try:
             # on appele l'algo
-            func[self.ia_select.get()](speed)
+            func[self.ia_select.get()]()
         except KeyError:
             print("Error exe algorithm")
 
@@ -411,5 +430,4 @@ class BoardGui(object):
 
 
 if __name__ == "__main__":
-
     n = BoardGui()
